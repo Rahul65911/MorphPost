@@ -1,0 +1,63 @@
+# MorphPost Backend Requirements
+
+# FastAPI &  Web Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Database
+sqlalchemy[asyncio]
+asyncpg
+alembic
+psycopg2-binary
+
+# Authentication & Security
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+
+# Configuration & Environment
+pydantic
+pydantic-settings
+python-dotenv
+
+# LangGraph & LangChain
+langgraph
+psycopg[binary,pool]
+langgraph-checkpoint-postgres
+langchain-core
+langchain-openai
+langchain
+langchain-community
+
+# AI Tools
+tavily-python
+tweepy
+mem0ai
+
+# OpenAI
+openai
+
+# Background Workers
+dramatiq[redis]
+redis
+
+# HTTP Client
+httpx
+aiohttp
+
+# Logging
+loguru
+
+# Utilities
+python-dateutil
+
+# Development (optional)
+pytest
+pytest-asyncio
+
+# File Parsing
+pypdf
+python-docx
+beautifulsoup4
+trafilatura
