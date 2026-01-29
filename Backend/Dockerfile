@@ -29,6 +29,10 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
+# Copy prestart script
+COPY prestart.sh .
+RUN chmod +x prestart.sh
+
 # Default command to run the API
 # CMD can be overridden to run workers: dramatiq src.workers.scheduler
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./prestart.sh"]

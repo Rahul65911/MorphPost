@@ -5,6 +5,9 @@ from src.core.security import get_current_user, CurrentUser
 from src.db.session import get_db_session
 from src.schemas.auth import LoginRequest, SignupRequest, TokenResponse, UserResponse, GoogleLoginRequest
 from src.services.auth_service import AuthService
+from src.core.logging import get_logger
+
+log = get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -33,8 +36,9 @@ async def signup(
             detail=str(exc),
         )
 
-    except Exception:
+    except Exception as e:
         # last-resort safety net
+        log.exception(f"Signup failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create user",
