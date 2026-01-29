@@ -16,6 +16,7 @@ from src.models.platform_state import PlatformState
 from src.models.draft import Draft
 from src.models.resource import Resource
 from src.models.publishing_job import PublishingJob
+from src.models.template import PostTemplate
 
 
 # Alembic Config

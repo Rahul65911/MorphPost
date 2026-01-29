@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -13,16 +13,34 @@ import {
   FileText as TemplateIcon,
   Linkedin,
   Twitter,
-  Newspaper,
   ArrowRight,
   Sparkles,
   RotateCcw,
+  Save,
+  Download,
+  Trash2
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { api } from "@/lib/api";
-import type { Platform, Mode, ResourceInput } from "@/types";
+import type { Platform, Mode, ResourceInput, PostTemplate } from "@/types";
 
 const platforms = [
   {
@@ -33,7 +51,7 @@ const platforms = [
     hint: "3,000 characters • Professional tone recommended",
   },
   {
-    id: "x" as Platform,  // Fixed: Changed from "twitter" to "x"
+    id: "x" as Platform,
     name: "X (Twitter)",
     icon: Twitter,
     color: "text-foreground",
@@ -42,12 +60,12 @@ const platforms = [
 ];
 
 export default function CreatePost() {
-  useRequireAuth(); // Protect this route
+  useRequireAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Primary mode selection - Fixed: Changed from "idea" to "manual"
+  // Mode selection
   const [mode, setMode] = useState<Mode>("manual");
 
   // Manual mode state
@@ -65,10 +83,102 @@ export default function CreatePost() {
   const [keywords, setKeywords] = useState("");
   const [constraints, setConstraints] = useState("");
 
+  // Template Management State
+  const [templates, setTemplates] = useState<PostTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
+
   // Shared state
   const [resources, setResources] = useState<Resource[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(["linkedin"]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      const data = await api.getTemplates();
+      setTemplates(data);
+    } catch (error) {
+      console.error("Failed to load templates", error);
+    }
+  };
+
+  const handleLoadTemplate = (templateId: string) => {
+    const template = templates.find((t) => t.id === templateId);
+    if (template) {
+      setSelectedTemplateId(templateId);
+      setGoalOfPost(template.goal);
+      setTargetAudience(template.audience);
+      setKeyMessage(template.key_message);
+      setDesiredTone(template.tone || "");
+      setCallToAction(template.call_to_action || "");
+      setKeywords(template.keywords ? template.keywords.join(", ") : "");
+      setConstraints(template.constraints || "");
+
+      toast({
+        title: "Template Loaded",
+        description: `Loaded "${template.name}"`,
+      });
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!newTemplateName.trim()) return;
+    if (!goalOfPost || !targetAudience || !keyMessage) {
+      toast({
+        title: "Missing Fields",
+        description: "Goal, Audience, and Key Message are required to save a template.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await api.createTemplate({
+        name: newTemplateName,
+        goal: goalOfPost,
+        audience: targetAudience,
+        key_message: keyMessage,
+        tone: desiredTone || undefined,
+        keywords: keywords ? keywords.split(",").map(k => k.trim()).filter(k => k) : [],
+        constraints: constraints || undefined,
+        call_to_action: callToAction || undefined,
+      });
+
+      toast({
+        title: "Template Saved",
+        description: `Saved "${newTemplateName}" to your library.`,
+      });
+
+      setIsSaveTemplateOpen(false);
+      setNewTemplateName("");
+      fetchTemplates();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save template.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTemplate = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this template?")) return;
+
+    try {
+      await api.deleteTemplate(id);
+      fetchTemplates();
+      if (selectedTemplateId === id) setSelectedTemplateId("");
+      toast({ title: "Template deleted" });
+    } catch (error) {
+      toast({ title: "Failed to delete template", variant: "destructive" });
+    }
+  };
 
   const togglePlatform = (platformId: Platform) => {
     setSelectedPlatforms((prev) =>
@@ -92,6 +202,7 @@ export default function CreatePost() {
     setConstraints("");
     setResources([]);
     setUrlInput("");
+    setSelectedTemplateId("");
     toast({
       title: "Form cleared",
       description: "All fields have been reset.",
@@ -142,9 +253,9 @@ export default function CreatePost() {
           content,
           options: {
             keep_wording: keepWording,
-            improve_clarity: !keepWording && !matchStyle, // Default behavior if neither is strictly selected, though UI forces one
+            improve_clarity: !keepWording && !matchStyle,
             rewrite_to_match_style: matchStyle,
-            adapt_for_platforms: true, // Defaulting to true as "Adapt" logic is core to the app now
+            adapt_for_platforms: true,
           },
           platforms: selectedPlatforms,
           resources: resourceInputs,
@@ -304,10 +415,73 @@ export default function CreatePost() {
             </TabsContent>
 
             <TabsContent value="template" className="space-y-6">
+
+              {/* Template Loader */}
+              <div className="bg-secondary/30 rounded-xl p-4 flex items-center gap-4">
+                <Download className="h-4 w-4 text-muted-foreground" />
+                <div className="flex-1">
+                  <Select value={selectedTemplateId} onValueChange={handleLoadTemplate}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Load a saved template..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.length === 0 ? (
+                        <SelectItem value="none" disabled>No templates saved yet</SelectItem>
+                      ) : (
+                        templates.map(t => (
+                          <div key={t.id} className="flex items-center justify-between w-full hover:bg-muted/50 rounded-sm">
+                            <SelectItem value={t.id} className="flex-1 cursor-pointer">
+                              {t.name}
+                            </SelectItem>
+                            <button
+                              onClick={(e) => handleDeleteTemplate(e, t.id)}
+                              className="p-1 text-destructive hover:bg-destructive/10 rounded mr-2"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="glass rounded-2xl p-6 space-y-5">
-                <h3 className="font-semibold text-foreground">Template Details</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground">Template Details</h3>
+                  <Dialog open={isSaveTemplateOpen} onOpenChange={setIsSaveTemplateOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Save className="h-4 w-4" />
+                        Save as Template
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Save Template</DialogTitle>
+                        <DialogDescription>
+                          Give your template a name to easily load these settings next time.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <Label htmlFor="templateName">Template Name</Label>
+                        <Input
+                          id="templateName"
+                          value={newTemplateName}
+                          onChange={e => setNewTemplateName(e.target.value)}
+                          placeholder="e.g., Weekly LinkedIn Update"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button onClick={handleSaveTemplate}>Save Template</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
 
                 <div className="space-y-4">
+                  {/* Fields for Template */}
                   <div className="space-y-2">
                     <Label htmlFor="goal" className="text-sm font-medium">
                       Goal of the post <span className="text-destructive">*</span>
@@ -380,6 +554,19 @@ export default function CreatePost() {
                       placeholder="Comma-separated keywords"
                       value={keywords}
                       onChange={(e) => setKeywords(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="constraints" className="text-sm font-medium">
+                      Constraints
+                    </Label>
+                    <Textarea
+                      id="constraints"
+                      placeholder="e.g. No emojis, keep it under 100 words"
+                      value={constraints}
+                      onChange={(e) => setConstraints(e.target.value)}
+                      className="min-h-[60px]"
                     />
                   </div>
                 </div>

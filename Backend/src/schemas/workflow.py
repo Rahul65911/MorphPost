@@ -11,6 +11,8 @@ class DraftView(BaseModel):
     platform: str
     content: str
     source: str
+    media_urls: Optional[List[str]] = None
+    media_type: Optional[str] = None
     created_at: datetime
 
 

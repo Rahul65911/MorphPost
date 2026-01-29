@@ -96,6 +96,8 @@ export interface DraftView {
     source: string;
     is_active: boolean;
     created_at: string;
+    media_urls?: string[];
+    media_type?: string;
 }
 
 // Evaluation View
@@ -115,6 +117,11 @@ export interface PlatformStateView {
     status: string;
     active_draft?: DraftView;
     evaluations: EvaluationView[];
+    publishing_job?: {
+        id: string;
+        status: string;
+        publish_at: string;
+    };
 }
 
 // Workflow View
@@ -188,4 +195,29 @@ export interface DashboardStats {
     published_posts: number;
     active_drafts: number;
     time_saved_hours: number;
+}
+
+export interface CalendarEvent {
+    id: string;
+    workflow_id: string;
+    platform: string;
+    status: string;
+    publish_at: string;
+    title?: string;
+    content_preview: string;
+    media_urls: string[];
+    metrics?: Record<string, number>;
+}
+
+export interface PostTemplate {
+    id: string;
+    name: string;
+    goal: string;
+    audience: string;
+    key_message: string;
+    tone?: string;
+    keywords: string[];
+    constraints?: string;
+    call_to_action?: string;
+    created_at: string;
 }

@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import CreatePost from "./pages/CreatePost";
 import ReviewWorkspace from "./pages/ReviewWorkspace";
 import History from "./pages/History";
+import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -21,7 +22,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme" attribute="class">
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme" attribute="class">
         <AuthProvider>
           <TooltipProvider>
             <Toaster />
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="/review" element={<ReviewWorkspace />} />
                 <Route path="/review/:workflowId" element={<ReviewWorkspace />} />
                 <Route path="/history" element={<History />} />
+                <Route path="/calendar" element={<Calendar />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

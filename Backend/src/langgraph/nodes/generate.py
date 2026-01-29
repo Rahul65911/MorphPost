@@ -77,6 +77,20 @@ async def generate_draft(state: PlatformGraphState) -> PlatformGraphState:
     from src.services.draft_service import DraftService
     from src.models.draft import DraftSource
     
+    # Extract media from resources for attachment
+    media_urls = []
+    media_type = None
+    
+    for r in state["resources"]:
+        # Check for image or video types
+        # Note: ResourceSnapshot type is string, assume "image" or "video"
+        if r.get("type") in ["image", "video"]:
+            media_urls.append(r["source"])
+            if not media_type:
+                media_type = r.get("type")
+            elif media_type != r.get("type"):
+                media_type = "mixed"
+
     async with AsyncSessionLocal() as db:
          stored_draft = await DraftService.create_and_set_active(
             db=db,
@@ -84,6 +98,8 @@ async def generate_draft(state: PlatformGraphState) -> PlatformGraphState:
             platform=platform,
             content=content,
             source=DraftSource.AI,
+            media_urls=media_urls,
+            media_type=media_type,
         )
         
     # Create draft snapshot from the stored draft

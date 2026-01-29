@@ -10,7 +10,7 @@ from sqlalchemy import (
     Index,
     Text,
 )
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.base import Base
@@ -70,6 +70,19 @@ class Draft(Base):
         nullable=False,
         default=DraftSource.AI,
         doc="Origin: ai or human",
+    )
+
+    # Media
+    media_urls: Mapped[list[str] | None] = mapped_column(
+        ARRAY(String),
+        nullable=True,
+        doc="List of media URLs attached to this draft",
+    )
+
+    media_type: Mapped[str | None] = mapped_column(
+        String(length=16),
+        nullable=True,
+        doc="Type of media: image, video, etc.",
     )
 
     # Timestamps

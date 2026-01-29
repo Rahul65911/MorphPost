@@ -280,7 +280,7 @@ export default function StyleSetup() {
   const isTwitterConnected = new URLSearchParams(window.location.search).get("twitter_connected") === "true";
   const isLinkedInConnected = new URLSearchParams(window.location.search).get("linkedin_connected") === "true";
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     // Save to local storage for Dashboard to pick up
     const preferences = {
       tone: tone[0],
@@ -289,6 +289,14 @@ export default function StyleSetup() {
       formality: formality[0],
     };
     localStorage.setItem("manual_style_preferences", JSON.stringify(preferences));
+
+    // Explicitly mark onboarding as done in backend
+    try {
+      await api.finishOnboarding();
+    } catch (e) {
+      console.error("Failed to mark onboarding as complete", e);
+      // Continue anyway so user is not stuck
+    }
 
     toast({
       title: "Style profile saved!",
@@ -339,8 +347,9 @@ export default function StyleSetup() {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-              <FileText className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center">
+              <img src="/logo-light.png" alt="MorphPost Logo" className="h-10 w-10 object-contain dark:hidden" />
+              <img src="/logo-dark.png" alt="MorphPost Logo" className="h-10 w-10 object-contain hidden dark:block" />
             </div>
             <span className="text-xl font-semibold text-foreground">MorphPost</span>
           </div>

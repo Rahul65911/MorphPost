@@ -30,6 +30,8 @@ class DraftService:
         platform: str,
         content: str,
         source: DraftSource = DraftSource.AI,
+        media_urls: list[str] | None = None,
+        media_type: str | None = None,
     ) -> Draft:
         """
         Create and persist a new draft.
@@ -40,6 +42,8 @@ class DraftService:
             platform: Target platform
             content: Draft content
             source: Draft source (AI or HUMAN)
+            media_urls: List of media URLs
+            media_type: Type of media
             
         Returns:
             Created Draft instance
@@ -58,6 +62,8 @@ class DraftService:
             platform=platform,
             content=content,
             source=source,
+            media_urls=media_urls,
+            media_type=media_type,
         )
         
         db.add(draft)
@@ -156,6 +162,8 @@ class DraftService:
         platform: str,
         content: str,
         source: DraftSource = DraftSource.AI,
+        media_urls: list[str] | None = None,
+        media_type: str | None = None,
     ) -> Draft:
         """
         Create a draft and immediately set it as active.
@@ -168,6 +176,8 @@ class DraftService:
             platform: Target platform
             content: Draft content
             source: Draft source (AI or HUMAN)
+            media_urls: List of media URLs
+            media_type: Type of media
             
         Returns:
             Created Draft instance
@@ -179,6 +189,8 @@ class DraftService:
             platform=platform,
             content=content,
             source=source,
+            media_urls=media_urls,
+            media_type=media_type,
         )
         
         # Set as active

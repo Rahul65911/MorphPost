@@ -103,6 +103,12 @@ class DraftGenerator:
             user_style_context = "Standard professional tone (Memory fetch failed)."
             recent_posts_text = "No recent posts available (Memory fetch failed)."
 
+        log.info(
+            "Generating content | memory = {} | recent posts = {}",
+            user_style_context,
+            recent_posts_text
+        )
+
         # Get platform-specific prompt with expanded context
         prompt = get_generation_prompt(
             platform, 

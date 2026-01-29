@@ -10,7 +10,7 @@ from sqlalchemy import (
     Index,
     Text,
 )
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.base import Base
@@ -100,6 +100,12 @@ class PublishingJob(Base):
         Text,
         nullable=True,
         doc="Last error message if publishing failed",
+    )
+    
+    metrics: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+        doc="Engagement metrics (likes, views, etc.)",
     )
 
     # Control Flags

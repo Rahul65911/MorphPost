@@ -14,7 +14,9 @@ import type {
     WorkflowSummary,
     ApiError,
     DashboardStats,
-    StyleProfile, // You might need to define this type in types/index.ts or let it infer
+    StyleProfile,
+    CalendarEvent,
+    PostTemplate,
 } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -97,12 +99,12 @@ class ApiClient {
     }
 
     async getDashboardStats(): Promise<DashboardStats> {
-        const response = await this.client.get<DashboardStats>('/api/v1/history/stats');
+        const response = await this.client.get<DashboardStats>('/api/v1/workflow/stats');
         return response.data;
     }
 
     async getWorkflows(skip = 0, limit = 20): Promise<WorkflowSummary[]> {
-        const response = await this.client.get<WorkflowSummary[]>('/api/v1/history/', {
+        const response = await this.client.get<WorkflowSummary[]>('/api/v1/workflow/', {
             params: { skip, limit }
         });
         return response.data;
@@ -123,6 +125,36 @@ class ApiClient {
     async publishOrSchedule(data: PublishRequest): Promise<PublishResponse> {
         const response = await this.client.post<PublishResponse>('/api/v1/publish/schedule', data);
         return response.data;
+    }
+
+    async getCalendarEvents(startDate?: string, endDate?: string): Promise<CalendarEvent[]> {
+        const response = await this.client.get<CalendarEvent[]>('/api/v1/publish/calendar', {
+            params: { start_date: startDate, end_date: endDate }
+        });
+        return response.data;
+    }
+
+    async updatePublishingJob(jobId: string, data: { status?: 'cancelled'; publish_at?: string }): Promise<void> {
+        await this.client.patch(`/api/v1/publish/${jobId}`, data);
+    }
+
+    async deletePublishingJob(jobId: string): Promise<void> {
+        await this.client.delete(`/api/v1/publish/${jobId}`);
+    }
+
+    // Template methods
+    async getTemplates(): Promise<PostTemplate[]> {
+        const response = await this.client.get<PostTemplate[]>('/api/v1/templates/');
+        return response.data;
+    }
+
+    async createTemplate(data: Omit<PostTemplate, 'id' | 'created_at'>): Promise<PostTemplate> {
+        const response = await this.client.post<PostTemplate>('/api/v1/templates/', data);
+        return response.data;
+    }
+
+    async deleteTemplate(id: string): Promise<void> {
+        await this.client.delete(`/api/v1/templates/${id}`);
     }
 
     // Onboarding endpoints
@@ -162,6 +194,11 @@ class ApiClient {
 
     async connectTwitter(): Promise<{ url: string }> {
         const response = await this.client.get('/api/v1/onboarding/connect/twitter');
+        return response.data;
+    }
+
+    async finishOnboarding(): Promise<{ status: string }> {
+        const response = await this.client.post('/api/v1/onboarding/finish');
         return response.data;
     }
 

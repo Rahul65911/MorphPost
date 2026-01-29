@@ -111,7 +111,7 @@ export function ResourceUploader({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-foreground">
-            Reference Materials (Optional)
+            Reference Materials & Media
           </h3>
           <TooltipProvider>
             <Tooltip>

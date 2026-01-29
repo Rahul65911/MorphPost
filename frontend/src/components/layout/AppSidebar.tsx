@@ -5,6 +5,7 @@ import {
   Settings,
   History,
   LayoutDashboard,
+  Calendar,
   ChevronLeft,
   LogOut,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import { useAuth } from "@/contexts/auth-context";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Create Post", href: "/create", icon: PenLine },
+  { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "History", href: "/history", icon: History },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
@@ -41,21 +43,22 @@ export function AppSidebar({ collapsed, setCollapsed }: AppSidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-4 top-4 bottom-4 z-40 rounded-2xl border border-white/10 shadow-2xl transition-all duration-500 ease-spring",
+        "fixed left-4 top-4 bottom-4 z-40 rounded-2xl border border-border shadow-2xl transition-all duration-500 ease-spring",
         "bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50", // Glass effect
         collapsed ? "w-16" : "w-64"
       )}
     >
       <div className="flex h-full flex-col py-4">
         {/* Logo */}
-        <div className="flex items-center justify-between px-4 mb-8">
+        <div className="flex items-center justify-between px-4 mb-4">
           {!collapsed && (
             <button
               onClick={handleLogoClick}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
+              className="flex items-center justify-center gap-2 hover:opacity-80 transition-opacity group"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600 shadow-lg group-hover:shadow-primary/50 transition-all duration-500">
-                <Zap className="h-4 w-4 text-white" />
+              <div className="flex h-14 w-14 mt-2 items-center justify-center rounded-lg bg-transparent">
+                <img src="/logo-light.png?v=2" alt="MorphPost Logo" className="h-14 w-14 object-contain dark:hidden" />
+                <img src="/logo-dark.png?v=2" alt="MorphPost Logo" className="h-14 w-14 object-contain hidden dark:block" />
               </div>
               <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
                 MorphPost
@@ -65,9 +68,10 @@ export function AppSidebar({ collapsed, setCollapsed }: AppSidebarProps) {
           {collapsed && (
             <button
               onClick={handleLogoClick}
-              className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 shadow-lg hover:shadow-primary/50 transition-all duration-500"
+              className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl hover:bg-secondary/50 transition-all duration-500"
             >
-              <Zap className="h-5 w-5 text-white" />
+              <img src="/logo-light.png?v=2" alt="MorphPost Logo" className="h-8 w-8 object-contain dark:hidden" />
+              <img src="/logo-dark.png?v=2" alt="MorphPost Logo" className="h-8 w-8 object-contain hidden dark:block" />
             </button>
           )}
 
@@ -95,7 +99,7 @@ export function AppSidebar({ collapsed, setCollapsed }: AppSidebarProps) {
                   "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-300",
                   isActive
                     ? "text-white shadow-lg shadow-primary/25"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
               >
                 {/* Active Background with Gradient */}
@@ -128,7 +132,7 @@ export function AppSidebar({ collapsed, setCollapsed }: AppSidebarProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-full"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full"
               onClick={() => setCollapsed(!collapsed)}
             >
               <ChevronLeft className="h-4 w-4 rotate-180" />

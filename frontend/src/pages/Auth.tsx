@@ -79,8 +79,9 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-8 animate-slide-up">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl gradient-primary shadow-lg">
-              <FileText className="h-6 w-6 text-primary-foreground" />
+            <div className="flex h-12 w-12 items-center justify-center">
+              <img src="/logo-light.png" alt="MorphPost Logo" className="h-12 w-12 object-contain dark:hidden" />
+              <img src="/logo-dark.png" alt="MorphPost Logo" className="h-12 w-12 object-contain hidden dark:block" />
             </div>
             <span className="text-2xl font-bold text-foreground">MorphPost</span>
           </div>

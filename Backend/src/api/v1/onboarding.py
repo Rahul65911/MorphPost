@@ -362,6 +362,26 @@ async def analyze_style(
             general_summary="Analysis failed. Using default profiles."
         )
 
+
+@router.post("/finish")
+async def finish_onboarding(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Mark onboarding as complete for the current user."""
+    try:
+        stmt = select(User).where(User.id == current_user.id)
+        user = (await db.execute(stmt)).scalar_one_or_none()
+        if user:
+            user.is_onboarded = True
+            await db.commit()
+            return {"status": "success", "message": "Onboarding completed"}
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
+    except Exception as e:
+        logger.error(f"Error finishing onboarding: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/connect/twitter")
 async def connect_twitter(request: Request):
     """Initiate Twitter OAuth flow."""

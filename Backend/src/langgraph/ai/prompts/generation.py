@@ -26,6 +26,8 @@ Create a LinkedIn post based on the following context, strictly adhering to the 
 
 {context}
 
+(If the context contain links, then fetch data from the links and use it to generate the post)
+
 **Guidelines:**
 1. Start with a compelling hook (first 2 lines are crucial)
 2. Provide clear value or insights
@@ -53,6 +55,8 @@ You get it: Transformers weigh engagement heavy—reposts, quotes, replies rule.
 
 **Raw Input (Turn This into Gold):**  
 {context}  
+
+(If the context contain links, then fetch data from the links and use it to generate the post)
 # topic, points, story, stats, question
 
 **Hard Rules (Stick to 'Em):**

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReschedulePopover } from "@/components/publishing/ReschedulePopover";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,8 @@ import {
   Loader2,
   Newspaper,
   Calendar as CalendarIcon,
+  Trash2,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -85,6 +88,7 @@ export default function ReviewWorkspace() {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState<Date>();
   const [scheduledTime, setScheduledTime] = useState(defaultTime);
+  const [rescheduleJobId, setRescheduleJobId] = useState<string | null>(null);
 
   // Poll workflow status
   useEffect(() => {
@@ -209,14 +213,24 @@ export default function ReviewWorkspace() {
 
     if (scheduledDate) {
       finalPublishDate = new Date(scheduledDate);
+      // Ensure we parse time correctly
+      if (!scheduledTime) {
+        toast({
+          title: "Time required",
+          description: "Please select a time for your scheduled post.",
+          variant: "destructive"
+        });
+        return;
+      }
       const [hours, minutes] = scheduledTime.split(":").map(Number);
-      finalPublishDate.setHours(hours, minutes);
+      finalPublishDate.setHours(hours, minutes, 0, 0);
 
       // Validate future time
-      if (finalPublishDate < new Date()) {
+      const now = new Date();
+      if (finalPublishDate <= now) {
         toast({
           title: "Invalid time",
-          description: "Please select a future date and time.",
+          description: "Scheduled time must be in the future.",
           variant: "destructive",
         });
         return;
@@ -224,22 +238,35 @@ export default function ReviewWorkspace() {
     }
 
     try {
-      await api.publishOrSchedule({
-        workflow_id: workflowId,
-        platform: selectedPlatform,
-        publish_at: finalPublishDate ? finalPublishDate.toISOString() : undefined,
-        timezone: "Asia/Kolkata",
-      });
+      if (rescheduleJobId) {
+        if (!finalPublishDate) {
+          toast({ title: "Error", description: "Date/Time required for rescheduling", variant: "destructive" });
+          return;
+        }
+        await api.updatePublishingJob(rescheduleJobId, { publish_at: finalPublishDate.toISOString() });
+        toast({
+          title: "Rescheduled!",
+          description: `Content rescheduled for ${selectedPlatform}`,
+        });
+      } else {
+        await api.publishOrSchedule({
+          workflow_id: workflowId,
+          platform: selectedPlatform,
+          publish_at: finalPublishDate ? finalPublishDate.toISOString() : undefined,
+          timezone: "Asia/Kolkata",
+        });
 
-      toast({
-        title: finalPublishDate ? "Scheduled!" : "Published!",
-        description: `Content ${finalPublishDate ? "scheduled" : "published"} for ${selectedPlatform}`,
-      });
+        toast({
+          title: finalPublishDate ? "Scheduled!" : "Published!",
+          description: `Content ${finalPublishDate ? "scheduled" : "published"} for ${selectedPlatform}`,
+        });
+      }
 
       setScheduleModalOpen(false);
       setScheduledDate(undefined);
       setScheduledTime("12:00");
       setSelectedPlatform(null);
+      setRescheduleJobId(null);
 
       // Refresh workflow
       const data = await api.getWorkflow(workflowId);
@@ -269,9 +296,67 @@ export default function ReviewWorkspace() {
 
   const handlePublishClick = (platform: string) => {
     setSelectedPlatform(platform);
+    setRescheduleJobId(null);
     setScheduledDate(new Date()); // Default to Today
+    const nextHour = new Date();
+    nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
+    setScheduledTime(format(nextHour, "HH:mm"));
     setScheduleModalOpen(true);
   };
+
+  // ... inside return ...
+
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        variant={"outline"}
+        className={`w-full justify-start text-left font-normal ${!scheduledDate && "text-muted-foreground"}`}
+      >
+        <CalendarIcon className="mr-2 h-4 w-4" />
+        {scheduledDate ? format(scheduledDate, "PPP") : "Pick a date"}
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent className="w-auto p-0">
+      <Calendar
+        mode="single"
+        selected={scheduledDate}
+        onSelect={setScheduledDate}
+        initialFocus
+        disabled={(date) => {
+          // Disable dates before today (00:00:00)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return date < today;
+        }}
+      />
+    </PopoverContent>
+  </Popover>
+
+
+  const handleUpdateJob = async (jobId: string, status: 'cancelled') => {
+    try {
+      await api.updatePublishingJob(jobId, { status });
+      toast({ title: "Success", description: "Post updated successfully" });
+      // Refresh workflow
+      const data = await api.getWorkflow(workflowId!);
+      setWorkflow(data);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update post", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteJob = async (jobId: string) => {
+    if (!confirm("Are you sure you want to delete this scheduled post?")) return;
+    try {
+      await api.deletePublishingJob(jobId);
+      toast({ title: "Success", description: "Post deleted" });
+      const data = await api.getWorkflow(workflowId!);
+      setWorkflow(data);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete post", variant: "destructive" });
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -346,6 +431,26 @@ export default function ReviewWorkspace() {
                 {/* Active Draft */}
                 {platformState.active_draft && (
                   <div className="space-y-4">
+
+                    {/* Media Attachments */}
+                    {platformState.active_draft.media_urls && platformState.active_draft.media_urls.length > 0 && (
+                      <div className="mb-4">
+                        <Label className="text-sm font-medium mb-2 block">Attached Media</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                          {platformState.active_draft.media_urls.map((url, i) => (
+                            <div key={i} className="relative rounded-lg overflow-hidden border bg-muted">
+                              {/* Simple check for video extension or media_type */}
+                              {(platformState.active_draft?.media_type === "video" || url.match(/\.(mp4|mov|webm)$/i)) ? (
+                                <video src={url} controls className="w-full h-auto max-h-[300px] object-cover" />
+                              ) : (
+                                <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-auto max-h-[300px] object-cover" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <Label className="text-sm font-medium mb-2 block">Generated Content (Editable)</Label>
                       <Textarea
@@ -415,27 +520,35 @@ export default function ReviewWorkspace() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3">
                           <Button
                             variant="default"
-                            onClick={() => handleReviewAction(platformState.platform, "accept")}
+                            className="flex-1"
+                            onClick={() => {
+                              const currentContent = editedContent[platformState.platform] ?? platformState.active_draft.content;
+                              const isModified = currentContent !== platformState.active_draft.content;
+
+                              if (isModified) {
+                                // If content changed, use edit_and_publish behavior
+                                handleReviewAction(
+                                  platformState.platform,
+                                  "edit_and_publish",
+                                  currentContent
+                                );
+                              } else {
+                                // If content is same, use standard accept (no new draft version needed)
+                                handleReviewAction(platformState.platform, "accept");
+                              }
+                            }}
                             disabled={submittingAction === platformState.platform}
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Accept (Original)
-                          </Button>
-
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleReviewAction(platformState.platform, "reject")}
-                            disabled={submittingAction === platformState.platform}
-                          >
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Reject
+                            Accept
                           </Button>
 
                           <Button
                             variant="outline"
+                            className="flex-1"
                             onClick={() =>
                               handleReviewAction(
                                 platformState.platform,
@@ -453,38 +566,110 @@ export default function ReviewWorkspace() {
                           </Button>
 
                           <Button
-                            variant="outline"
-                            onClick={() =>
-                              handleReviewAction(
-                                platformState.platform,
-                                "edit_and_publish",
-                                editedContent[platformState.platform] ?? platformState.active_draft.content
-                              )
-                            }
-                            disabled={
-                              submittingAction === platformState.platform
-                            }
+                            variant="destructive"
+                            className="flex-1"
+                            onClick={() => handleReviewAction(platformState.platform, "reject")}
+                            disabled={submittingAction === platformState.platform}
                           >
-                            <Send className="h-4 w-4 mr-2" />
-                            Save & Approve
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Reject
                           </Button>
                         </div>
                       </div>
                     )}
 
-                    {/* Publish Button for Accepted Content */}
-                    {platformState.status === "accepted" && (
-                      <div className="pt-4 border-t">
-                        <Button
-                          variant="gradient"
-                          size="lg"
-                          className="w-full"
-                          onClick={() => handlePublishClick(platformState.platform)}
-                        >
-                          <Send className="h-5 w-5 mr-2" />
-                          Publish or Schedule
-                        </Button>
+                    {/* Publishing Status & Controls */}
+                    {platformState.publishing_job ? (
+                      <div className="pt-4 border-t space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">Publishing Status</span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant={platformState.publishing_job.status === 'success' || platformState.publishing_job.status === 'published' ? 'secondary' : 'outline'} className="capitalize">
+                                {platformState.publishing_job.status.replace("_", " ")}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(platformState.publishing_job.publish_at), "PPP p")}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {(platformState.publishing_job.status === 'pending' || platformState.publishing_job.status === 'cancelled') && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleDeleteJob(platformState.publishing_job!.id)}
+                                  title="Delete Job"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+
+                                {platformState.publishing_job.status === 'pending' ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 text-xs text-destructive hover:border-destructive hover:text-destructive border-dashed"
+                                    onClick={() => handleUpdateJob(platformState.publishing_job!.id, 'cancelled')}
+                                  >
+                                    Cancel
+                                  </Button>
+                                ) : (
+                                  <ReschedulePopover
+                                    initialDate={new Date(platformState.publishing_job.publish_at)}
+                                    onConfirm={(newDate) => {
+                                      // Reuse the API update logic but directly with the new date
+                                      if (platformState.publishing_job?.id) {
+                                        // Can't use handleRescheduleClick because that opens Modal.
+                                        // Need to call API directly here or use a helper.
+                                        // Let's call api directly as in Calendar
+                                        const update = async () => {
+                                          try {
+                                            await api.updatePublishingJob(platformState.publishing_job!.id, { publish_at: newDate.toISOString() });
+                                            toast({ title: "Rescheduled!", description: `Updated for ${platformState.platform}` });
+                                            // Refresh
+                                            const data = await api.getWorkflow(workflowId!);
+                                            setWorkflow(data);
+                                          } catch (e) {
+                                            toast({ title: "Error", description: "Failed to reschedule", variant: "destructive" });
+                                          }
+                                        };
+                                        update();
+                                      }
+                                    }}
+                                    trigger={
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 text-xs"
+                                      >
+                                        <RefreshCw className="h-3 w-3 mr-1" />
+                                        Reschedule
+                                      </Button>
+                                    }
+                                  />
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
+                    ) : (
+                      platformState.status === "accepted" && (
+                        <div className="pt-4 border-t">
+                          <Button
+                            variant="gradient"
+                            size="lg"
+                            className="w-full"
+                            onClick={() => handlePublishClick(platformState.platform)}
+                          >
+                            <Send className="h-5 w-5 mr-2" />
+                            Publish or Schedule
+                          </Button>
+                        </div>
+                      )
                     )}
                   </div>
                 )}
@@ -505,37 +690,42 @@ export default function ReviewWorkspace() {
         <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Publish Content</DialogTitle>
+              <DialogTitle>{rescheduleJobId ? "Reschedule Content" : "Publish Content"}</DialogTitle>
               <DialogDescription>
-                Choose when to publish this content to {selectedPlatform}.
+                {rescheduleJobId
+                  ? `Choose a new time for your ${selectedPlatform} post.`
+                  : `Choose when to publish this content to ${selectedPlatform}.`
+                }
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="flex flex-col space-y-2">
-                <div className="rounded-md border p-4 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Publish Immediately
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Post to {selectedPlatform} right now
-                    </p>
+                {!rescheduleJobId && (
+                  <div className="rounded-md border p-4 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Publish Immediately
+                      </label>
+                      <p className="text-sm text-muted-foreground">
+                        Post to {selectedPlatform} right now
+                      </p>
+                    </div>
+                    <Button
+                      variant={!scheduledDate ? "default" : "outline"}
+                      onClick={() => setScheduledDate(undefined)}
+                      size="sm"
+                    >
+                      Select
+                    </Button>
                   </div>
-                  <Button
-                    variant={!scheduledDate ? "default" : "outline"}
-                    onClick={() => setScheduledDate(undefined)}
-                    size="sm"
-                  >
-                    Select
-                  </Button>
-                </div>
+                )}
 
                 <div className="rounded-md border p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <label className="text-sm font-medium leading-none">
-                        Schedule for Later
+                        {rescheduleJobId ? "Select New Time" : "Schedule for Later"}
                       </label>
                       <p className="text-sm text-muted-foreground">
                         Pick a date and time
@@ -559,7 +749,12 @@ export default function ReviewWorkspace() {
                         selected={scheduledDate}
                         onSelect={setScheduledDate}
                         initialFocus
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => {
+                          // Disable dates before today (00:00:00)
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return date < today;
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -585,7 +780,10 @@ export default function ReviewWorkspace() {
                 Cancel
               </Button>
               <Button onClick={handleConfirmPublish} disabled={!selectedPlatform}>
-                {scheduledDate ? "Schedule" : "Publish Now"}
+                {rescheduleJobId
+                  ? "Update Schedule"
+                  : (scheduledDate ? "Schedule" : "Publish Now")
+                }
               </Button>
             </DialogFooter>
           </DialogContent>

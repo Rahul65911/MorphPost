@@ -87,7 +87,7 @@ export default function History() {
 
   const filteredHistory = workflows.filter((item) => {
     // Basic search on ID for now since topic is missing
-    const topic = `Untitled Post (${item.id.slice(0, 8)})`;
+    const topic = item.title || `Untitled Post (${item.id.slice(0, 8)})`;
     const matchesSearch = topic.toLowerCase().includes(search.toLowerCase());
 
     // Status filter mapping: Backend uses 'created', 'in_progress', etc.
@@ -231,7 +231,7 @@ export default function History() {
                       <div className="flex items-center gap-3 mb-2">
                         <Link to={`/review/${item.id}`} className="hover:underline">
                           <h3 className="font-semibold text-foreground truncate">
-                            Untitled Post ({item.id.slice(0, 8)}...)
+                            {item.title || `Untitled Post (${item.id.slice(0, 8)}...)`}
                           </h3>
                         </Link>
                         <StatusBadge status={item.status} />
@@ -240,7 +240,7 @@ export default function History() {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           {item.platforms.map((platform) => {
-                            const config = platformConfig[platform.toLowerCase()] || platformConfig.blog;
+                            const config = platformConfig[platform.toLowerCase()] || platformConfig.linkedin; // Default to linkedin or handle unknown
                             return (
                               <div
                                 key={platform}

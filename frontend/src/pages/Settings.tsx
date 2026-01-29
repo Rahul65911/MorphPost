@@ -200,51 +200,13 @@ export default function Settings() {
                 />
               </div>
 
-              <div className="space-y-6 pt-4 border-t border-border/50">
-                <h3 className="text-md font-medium text-foreground">Fine-tune Controls</h3>
-                <SliderField
-                  label="Tone"
-                  leftLabel="Casual"
-                  rightLabel="Formal"
-                  value={tone}
-                  onChange={setTone}
-                />
-                <SliderField
-                  label="Emoji Usage"
-                  leftLabel="None"
-                  rightLabel="Heavy"
-                  value={emojiUsage}
-                  onChange={setEmojiUsage}
-                />
-                <SliderField
-                  label="CTA Strength"
-                  leftLabel="Subtle"
-                  rightLabel="Aggressive"
-                  value={ctaStrength}
-                  onChange={setCtaStrength}
-                />
-                <SliderField
-                  label="Formality"
-                  leftLabel="Relaxed"
-                  rightLabel="Professional"
-                  value={formality}
-                  onChange={setFormality}
-                />
-              </div>
 
-              <div className="flex items-center gap-3 pt-4">
+              <div className="flex items-center gap-3 pt-4 border-t border-border/50">
                 <Badge variant="secondary">Active Profile</Badge>
                 <span className="text-sm text-muted-foreground">
-                  Changes here affect all future posts.
+                  Your style profile is automatically updated based on your content.
                 </span>
               </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button variant="gradient" onClick={handleSave}>
-                <Check className="h-4 w-4 mr-2" />
-                Save Style Settings
-              </Button>
             </div>
           </TabsContent>
 

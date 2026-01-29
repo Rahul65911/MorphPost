@@ -42,3 +42,25 @@ class PublishRequest(BaseModel):
         #     pass
 
         return values
+
+
+class PublishUpdateRequest(BaseModel):
+    """
+    Request to update a publishing job (cancel or reschedule).
+    """
+    status: Optional[str] = Field(None, description="New status (only 'cancelled' allowed for updates)")
+    publish_at: Optional[datetime] = Field(None, description="New publish time")
+    
+    @model_validator(mode="before")
+    @classmethod
+    def validate_update(cls, values):
+        status = values.get("status")
+        publish_at = values.get("publish_at")
+        
+        if not status and not publish_at:
+            raise ValueError("Either status or publish_at must be provided")
+            
+        if status and status.lower() != "cancelled":
+             raise ValueError("Only 'cancelled' status is allowed for updates")
+             
+        return values
