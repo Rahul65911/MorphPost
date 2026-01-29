@@ -18,6 +18,7 @@ bcrypt
 
 # Configuration & Environment
 pydantic
+pydantic[email]
 pydantic-settings
 python-dotenv
 
