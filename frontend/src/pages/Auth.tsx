@@ -205,17 +205,6 @@ export default function Auth() {
               </div>
             </div>
 
-            {isLogin && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  className="text-sm text-primary hover:text-primary/80 transition-colors"
-                >
-                  Forgot password?
-                </button>
-              </div>
-            )}
-
             <Button
               type="submit"
               className="w-full h-11"

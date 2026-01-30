@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ interface IntegrationState {
 
 export default function Settings() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Style settings
@@ -78,33 +80,36 @@ export default function Settings() {
     });
   };
 
+  const handleReanalyze = () => {
+    navigate("/style-setup");
+  };
+
   const handleConnect = async (platform: string) => {
-    if (platform === "X") {
-      try {
-        const { url } = await api.connectTwitter();
-        window.location.href = url;
-      } catch (error) {
+    try {
+      let url = "";
+      if (platform === "X") {
+        const res = await api.connectTwitter();
+        url = res.url;
+      } else if (platform === "LinkedIn") {
+        const res = await api.connectLinkedIn();
+        url = res.url;
+      } else {
         toast({
-          title: "Connection failed",
-          description: "Could not initiate Twitter connection.",
-          variant: "destructive",
+          title: "Coming Soon",
+          description: `${platform} integration is not yet available.`,
         });
+        return;
       }
-    } else {
-      // Simulation for others
+
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
       toast({
-        title: `Connecting to ${platform}...`,
-        description: "Redirecting to authorization page.",
+        title: "Connection failed",
+        description: `Could not initiate ${platform} connection.`,
+        variant: "destructive",
       });
-      setTimeout(() => {
-        if (platform === "LinkedIn") {
-          setLinkedinState({ status: "connected", lastConnected: "Just now" });
-        }
-        toast({
-          title: `${platform} connected`,
-          description: "You can now publish to this platform.",
-        });
-      }, 1500);
     }
   };
 
@@ -146,10 +151,6 @@ export default function Settings() {
               <LinkIcon className="h-4 w-4" />
               Integrations
             </TabsTrigger>
-            <TabsTrigger value="publishing" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Publishing
-            </TabsTrigger>
             <TabsTrigger value="account" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Account
@@ -166,7 +167,7 @@ export default function Settings() {
                     Analyzed from your connected accounts.
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleReanalyze}>
                   <Upload className="h-4 w-4 mr-2" />
                   Re-analyze
                 </Button>
@@ -269,70 +270,7 @@ export default function Settings() {
             </div>
           </TabsContent>
 
-          {/* Publishing Preferences */}
-          <TabsContent value="publishing" className="space-y-6">
-            <div className="glass rounded-2xl p-6 space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Publishing Preferences</h2>
-                <p className="text-sm text-muted-foreground">
-                  Configure default publishing behavior.
-                </p>
-              </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base font-medium">Auto-Schedule Posts</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Automatically schedule posts for optimal engagement times
-                    </p>
-                  </div>
-                  <Switch
-                    checked={autoSchedule}
-                    onCheckedChange={setAutoSchedule}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Default Tone</Label>
-                  <Select value={defaultTone} onValueChange={setDefaultTone}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="casual">Casual</SelectItem>
-                      <SelectItem value="bold">Bold & Confident</SelectItem>
-                      <SelectItem value="friendly">Friendly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Default CTA Style</Label>
-                  <Select value={defaultCta} onValueChange={setDefaultCta}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="comment">Ask for Comments</SelectItem>
-                      <SelectItem value="share">Encourage Shares</SelectItem>
-                      <SelectItem value="follow">Request Follows</SelectItem>
-                      <SelectItem value="link">Link Click</SelectItem>
-                      <SelectItem value="none">No CTA</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button variant="gradient" onClick={handleSave}>
-                <Check className="h-4 w-4 mr-2" />
-                Save Publishing Settings
-              </Button>
-            </div>
-          </TabsContent>
 
           {/* Account */}
           <TabsContent value="account" className="space-y-6">

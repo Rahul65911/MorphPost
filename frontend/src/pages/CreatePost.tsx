@@ -92,7 +92,7 @@ export default function CreatePost() {
   // Shared state
   const [resources, setResources] = useState<Resource[]>([]);
   const [urlInput, setUrlInput] = useState("");
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(["linkedin"]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(["x"]);
 
   useEffect(() => {
     fetchTemplates();

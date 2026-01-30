@@ -389,8 +389,8 @@ async def connect_twitter(request: Request):
         if not settings.x_client_id or not settings.x_client_secret:
              return {"url": f"{str(request.base_url)}api/v1/onboarding/connect/twitter/callback_simulated"}
 
-        # Use localhost for consistency with LinkedIn and standard OAuth practices
-        backend_url = f"http://localhost:{settings.port}"
+        # Use dynamic base URL for callbacks
+        backend_url = str(request.base_url).rstrip("/")
         callback_uri = f"{backend_url}/api/v1/onboarding/connect/twitter/callback"
 
         oauth2_user_handler = tweepy.OAuth2UserHandler(
@@ -415,8 +415,8 @@ async def twitter_callback(request: Request, code: str, state: Optional[str] = N
         import os
         os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-        # Use localhost to match the connect endpoint
-        backend_url = f"http://localhost:{settings.port}"
+        # Use dynamic base URL for callbacks
+        backend_url = str(request.base_url).rstrip("/")
         callback_uri = f"{backend_url}/api/v1/onboarding/connect/twitter/callback"
 
         oauth2_user_handler = tweepy.OAuth2UserHandler(
@@ -470,9 +470,8 @@ async def connect_linkedin(request: Request):
         scopes = ["openid", "profile", "email"]
         scope_str = "%20".join(scopes)
         
-        # Hardcode to localhost to match typical OAuth app registration
-        # settings.host might be 127.0.0.1 which causes mismatch if app expects localhost
-        backend_url = f"http://localhost:{settings.port}"
+        # Use dynamic base URL for callbacks
+        backend_url = str(request.base_url).rstrip("/")
         redirect_uri = f"{backend_url}/api/v1/onboarding/connect/linkedin/callback"
         
         # State should be random for security, using simple string for now
@@ -508,7 +507,7 @@ async def linkedin_callback(
         import os
         os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
         
-        backend_url = f"http://localhost:{settings.port}"
+        backend_url = str(request.base_url).rstrip("/")
         
         # Check for error first
         if error:
